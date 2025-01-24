@@ -1,16 +1,24 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common'
 import { JwtAuthGuard } from '@/infra/auth/jwt-auth.guard'
 import { FetchRecentQuestionsUseCase } from '@/domain/forum/application/use-cases/fetch-recent-questions'
+import { QuestionPresenter } from '../presenters/question-presenter'
 
 @Controller('/questions')
 @UseGuards(JwtAuthGuard)
 export class FetchRecentQuestionsController {
-  constructor(private fetchQuestion: FetchRecentQuestionsUseCase) {}
+  constructor(private fetchRecentQuestions: FetchRecentQuestionsUseCase) {}
 
   @Get()
   async handle(@Query('page') page: number) {
-    const questions = await this.fetchQuestion.execute({ page })
+    const result = await this.fetchRecentQuestions.execute({
+      page,
+    })
 
-    return { questions }
+    if (result.isLeft()) {
+      throw new Error()
+    }
+
+    const questions = result.value.questions
+    return { questions: questions.map(QuestionPresenter.toHTTP) }
   }
 }
